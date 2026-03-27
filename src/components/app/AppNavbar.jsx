@@ -8,11 +8,12 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter }      from "next/navigation";
-import { useUser, UserButton }         from "@clerk/nextjs";
+import { useUser, useClerk, UserButton } from "@clerk/nextjs";
 import {
   Menu, X, Search,
   BookOpen, Code2, Brain,
   FileText, LayoutDashboard, Loader2, Crown,
+  LogOut, Settings, ChevronRight,
 }                                      from "lucide-react";
 import { cn }                          from "@/lib/utils";
 
@@ -39,6 +40,7 @@ export default function AppNavbar({ isPremium = false }) {
   const pathname            = usePathname();
   const router              = useRouter();
   const { user, isLoaded }  = useUser();
+  const { signOut }         = useClerk();
 
   const [menuOpen,      setMenuOpen]      = useState(false);
   const [searchOpen,    setSearchOpen]    = useState(false);
@@ -249,7 +251,7 @@ export default function AppNavbar({ isPremium = false }) {
             </div>
 
             {/* ── MOBILE RIGHT ──────────────────────────────── */}
-            <div className="md:hidden flex items-center gap-2 ml-auto">
+            <div className="md:hidden flex items-center gap-1.5 ml-auto">
               <button
                 onClick={() => setSearchOpen((p) => !p)}
                 aria-label="Open search"
@@ -258,7 +260,6 @@ export default function AppNavbar({ isPremium = false }) {
               >
                 <Search size={18} />
               </button>
-              <UserButton afterSignOutUrl="/" />
               <button
                 onClick={() => setMenuOpen((p) => !p)}
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -391,40 +392,101 @@ export default function AppNavbar({ isPremium = false }) {
       {/* ── MOBILE DRAWER ───────────────────────────────────── */}
       {menuOpen && (
         <div
-          className="md:hidden fixed inset-0 z-40 bg-slate-900/20"
+          className="md:hidden fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm"
           onClick={() => setMenuOpen(false)}
         >
           <div
-            className="absolute top-16 left-0 right-0 bg-white
-              border-b border-slate-200 shadow-xl"
+            className="absolute top-16 left-0 right-0 bg-white border-b border-slate-200 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="max-w-7xl mx-auto px-4 py-3 space-y-0.5">
-              {/* Premium badge row in mobile menu */}
-              {isPremium && isLoaded && user && (
-                <div className="flex items-center gap-2 px-3 py-2 mb-1
-                  bg-amber-50 border border-amber-200 rounded-xl">
-                  <Crown size={13} className="text-amber-500 shrink-0" />
-                  <span className="text-xs font-semibold text-amber-700">
-                    {user.firstName ?? "You"} · Premium Member
-                  </span>
+            <div className="max-w-7xl mx-auto">
+
+              {/* ── User profile section ── */}
+              {isLoaded && user && (
+                <div className="px-4 pt-4 pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    {/* Avatar */}
+                    <div className="relative shrink-0">
+                      {user.imageUrl ? (
+                        <img
+                          src={user.imageUrl}
+                          alt={user.firstName ?? "User"}
+                          className="w-11 h-11 rounded-full ring-2 ring-teal-100 ring-offset-1 object-cover"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-base ring-2 ring-teal-100 ring-offset-1">
+                          {(user.firstName?.[0] ?? user.username?.[0] ?? "U").toUpperCase()}
+                        </div>
+                      )}
+                      {isPremium && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center">
+                          <Crown size={9} className="text-white" />
+                        </span>
+                      )}
+                    </div>
+                    {/* Name + email */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-800 truncate">
+                        {user.firstName
+                          ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}`
+                          : (user.username ?? "User")}
+                      </p>
+                      <p className="text-xs text-slate-400 truncate">
+                        {user.primaryEmailAddress?.emailAddress ?? ""}
+                      </p>
+                      {isPremium && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 mt-0.5">
+                          <Crown size={8} /> Premium Member
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
-              {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
+
+              {/* ── Nav links ── */}
+              <div className="px-4 py-3 space-y-0.5">
+                {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
+                  <button
+                    key={href}
+                    onClick={() => router.push(href)}
+                    aria-label={`Navigate to ${label}`}
+                    aria-current={isActive(href) ? "page" : undefined}
+                    className={cn(
+                      "flex w-full items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors",
+                      isActive(href)
+                        ? "text-teal-700 bg-teal-50"
+                        : "text-slate-600 hover:bg-slate-50"
+                    )}
+                  >
+                    <Icon size={16} className={isActive(href) ? "text-teal-600" : "text-slate-400"} />
+                    <span className="flex-1 text-left">{label}</span>
+                    {isActive(href) && <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />}
+                  </button>
+                ))}
+              </div>
+
+              {/* ── Account actions ── */}
+              <div className="px-4 pb-4 pt-1 border-t border-slate-100 space-y-0.5">
                 <button
-                  key={href}
-                  onClick={() => router.push(href)}
-                  aria-label={`Navigate to ${label}`}
-                  className={cn(
-                    "flex w-full items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors",
-                    isActive(href)
-                      ? "text-teal-700 bg-teal-50"
-                      : "text-slate-600 hover:bg-slate-50"
-                  )}
+                  onClick={() => { router.push("/settings"); setMenuOpen(false); }}
+                  aria-label="Settings"
+                  className="flex w-full items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                 >
-                  <Icon size={16} /> {label}
+                  <Settings size={16} className="text-slate-400" />
+                  <span className="flex-1 text-left">Settings</span>
+                  <ChevronRight size={14} className="text-slate-300" />
                 </button>
-              ))}
+                <button
+                  onClick={() => signOut({ redirectUrl: "/" })}
+                  aria-label="Sign out"
+                  className="flex w-full items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors"
+                >
+                  <LogOut size={16} className="text-rose-400" />
+                  Sign Out
+                </button>
+              </div>
+
             </div>
           </div>
         </div>
