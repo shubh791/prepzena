@@ -7,7 +7,7 @@ import Link                             from "next/link";
 import { useMutation, useQuery,
          useQueryClient }               from "@tanstack/react-query";
 import {
-  BookOpen, Lock, CheckCircle2, ChevronRight,
+  BookOpen, Lock, CheckCircle2, ChevronRight, ChevronLeft,
   Crown, Zap, Brain, Trophy,
   ChevronDown, ChevronUp, Clock, Search, X,
   PartyPopper,
@@ -457,6 +457,7 @@ export default function NotesHub({ topics, progressMap: initialProgressMap, isPr
   const [activeTopic,   setActiveTopic]   = useState(topics.find(t => t.slug === activeTopicSlug) ?? topics[0] ?? null);
   const [sessionPassed, setSessionPassed] = useState({});
   const [noteFilter,    setNoteFilter]    = useState("");
+  const [mobileView,    setMobileView]    = useState(activeTopicSlug ? "notes" : "topics");
 
   // Live progress — uses server-provided data as initialData so first render is instant,
   // then stays fresh via React Query; any mutation (mark complete/undo) re-fetches automatically
@@ -512,7 +513,7 @@ export default function NotesHub({ topics, progressMap: initialProgressMap, isPr
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Sidebar */}
-        <aside className="lg:w-64 shrink-0" aria-label="Topics">
+        <aside className={cn("lg:w-64 shrink-0", mobileView === "notes" ? "hidden lg:block" : "block")} aria-label="Topics">
           <p className="text-xs font-mono tracking-widest uppercase text-slate-400 mb-3">Topics</p>
           <div className="space-y-2">
             {topics.map(topic => (
@@ -521,6 +522,7 @@ export default function NotesHub({ topics, progressMap: initialProgressMap, isPr
                 onClick={() => {
                   setActiveTopic(topic);
                   setNoteFilter("");
+                  setMobileView("notes");
                   router.push(`/notes?topic=${topic.slug}`, { scroll:false });
                 }} />
             ))}
@@ -528,7 +530,13 @@ export default function NotesHub({ topics, progressMap: initialProgressMap, isPr
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 min-w-0 space-y-4" aria-label="Notes content">
+        <main className={cn("flex-1 min-w-0 space-y-4", mobileView === "topics" ? "hidden lg:block" : "block")} aria-label="Notes content">
+          {/* Back button — mobile only */}
+          <button onClick={() => setMobileView("topics")}
+            aria-label="Back to topics"
+            className="lg:hidden flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 mb-1 -mt-1">
+            <ChevronLeft size={16} /> Back to Topics
+          </button>
           {/* Topic banner */}
           {activeTopic && (
             <div className={cn(`bg-gradient-to-r ${c.hero}`, "rounded-2xl p-5 text-white shadow-lg")}>
