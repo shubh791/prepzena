@@ -30,8 +30,8 @@ export default function LandingPage() {
     }
   }, [isLoaded, isSignedIn]);
 
-  /* ── Show nothing while Clerk hydrates ── */
-  if (!isLoaded) return null;
+  /* ── Show nothing while Clerk hydrates or while redirecting ── */
+  if (!isLoaded || isSignedIn) return null;
 
   return (
     <main className="overflow-x-hidden">

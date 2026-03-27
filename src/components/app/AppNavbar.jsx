@@ -478,7 +478,7 @@ export default function AppNavbar({ isPremium = false }) {
                   <ChevronRight size={14} className="text-slate-300" />
                 </button>
                 <button
-                  onClick={() => signOut({ redirectUrl: "/" })}
+                  onClick={() => { setMenuOpen(false); signOut({ redirectUrl: "/" }); }}
                   aria-label="Sign out"
                   className="flex w-full items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors"
                 >
