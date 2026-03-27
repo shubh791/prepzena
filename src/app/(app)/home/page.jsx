@@ -239,6 +239,35 @@ export default async function HomePage() {
         })}
       </div>
 
+      {/* ── PROGRESS SUMMARY — mobile only (top position) ── */}
+      {notesRead > 0 && (
+        <div className="lg:hidden bg-white border border-slate-100 rounded-2xl p-6">
+          <h2 className="text-base font-bold text-slate-900 mb-5"
+            style={{ fontFamily:"var(--font-sora,'Sora',sans-serif)" }}>
+            Progress Summary
+          </h2>
+          <div className="grid grid-cols-3 gap-6 text-center">
+            <div>
+              <p className="text-3xl font-bold text-teal-600"
+                style={{ fontFamily:"var(--font-sora,'Sora',sans-serif)" }}>{notesRead}</p>
+              <p className="text-xs text-slate-400 font-mono mt-1">Notes completed</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-violet-600"
+                style={{ fontFamily:"var(--font-sora,'Sora',sans-serif)" }}>{avgScore}%</p>
+              <p className="text-xs text-slate-400 font-mono mt-1">Quiz average</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-amber-600"
+                style={{ fontFamily:"var(--font-sora,'Sora',sans-serif)" }}>
+                {topicStats.filter(t => t.pct === 100).length}
+              </p>
+              <p className="text-xs text-slate-400 font-mono mt-1">Topics finished</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── WEEKLY GOAL + MONTHLY CALENDAR TOGGLE ── */}
       <WeeklyGoalCard
         weekActivity={weekActivity}
@@ -468,9 +497,9 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* ── OVERALL PROGRESS SUMMARY ── */}
+      {/* ── OVERALL PROGRESS SUMMARY — desktop only (bottom position) ── */}
       {notesRead > 0 && (
-        <div className="bg-white border border-slate-100 rounded-2xl p-6">
+        <div className="hidden lg:block bg-white border border-slate-100 rounded-2xl p-6">
           <h2 className="text-base font-bold text-slate-900 mb-5"
             style={{ fontFamily:"var(--font-sora,'Sora',sans-serif)" }}>
             Progress Summary
