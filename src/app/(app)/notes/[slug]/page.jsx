@@ -1,4 +1,7 @@
 // src/app/(app)/notes/[slug]/page.jsx
+export const dynamic    = "force-dynamic";
+export const revalidate = 0;
+
 import { auth }               from "@clerk/nextjs/server";
 import { redirect, notFound } from "next/navigation";
 import { prisma }             from "@/lib/prisma";

@@ -5,6 +5,7 @@
 
 import { useState, useEffect }        from "react";
 import Link                            from "next/link";
+import { useRouter }                   from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2, Crown, Clock, ChevronLeft,
@@ -231,6 +232,7 @@ const TC = {
 
 export default function NoteReader({ note, canRead, completed:initialCompleted, quizScore, prevNote, nextNote }) {
   const queryClient   = useQueryClient();
+  const router        = useRouter();
   const [isCompleted, setIsCompleted] = useState(initialCompleted);
   const [streakToast, setStreakToast] = useState(null); // streak count or null
 
@@ -247,6 +249,8 @@ export default function NoteReader({ note, canRead, completed:initialCompleted, 
     onMutate:  (newState) => setIsCompleted(newState),
     onSuccess: async (_, newState) => {
       queryClient.invalidateQueries({ queryKey: ["progress"] });
+      // Bust the Next.js router cache so home/notes server components show fresh data
+      router.refresh();
       // Show streak toast only when completing
       if (newState) {
         try {

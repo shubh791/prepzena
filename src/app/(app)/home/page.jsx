@@ -1,5 +1,8 @@
 // src/app/(app)/home/page.jsx
-// Server component — fetches real progress data per topic
+// Server component — always dynamic so stats are always fresh
+
+export const dynamic  = "force-dynamic";
+export const revalidate = 0;
 
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect }          from "next/navigation";
@@ -79,7 +82,7 @@ export default async function HomePage() {
   const clerkUser = await currentUser();
   const firstName = clerkUser?.firstName ?? "there";
 
-  const [dbUser, topics, completedProgress] = await Promise.all([
+  const [dbUser, topics, completedProgress, recentlyCompleted] = await Promise.all([
     prisma.user.findUnique({
       where:  { clerkId: userId },
       select: { isPremium: true, streak: true, lastSeen: true },
@@ -103,37 +106,33 @@ export default async function HomePage() {
       },
     }).catch(() => []),
 
-    // All progress including updatedAt for week tracking
+    // All progress including updatedAt for week/month tracking
     prisma.progress.findMany({
       where: { user: { clerkId: userId } },
       select: { noteId: true, quizScore: true, completed: true, updatedAt: true },
     }).catch(() => []),
-  ]);
 
-  // Recently completed notes with topic info
-  const recentlyCompleted = await prisma.progress.findMany({
-    where: {
-      user:      { clerkId: userId },
-      completed: true,
-    },
-    orderBy: { updatedAt: "desc" },
-    take:    3,
-    select:  {
-      updatedAt: true,
-      note: {
-        select: {
-          id:    true,
-          title: true,
-          slug:  true,
-          topic: { select: { title: true, slug: true, color: true, icon: true } },
+    // Recently completed — parallel with everything else
+    prisma.progress.findMany({
+      where:   { user: { clerkId: userId }, completed: true },
+      orderBy: { updatedAt: "desc" },
+      take:    3,
+      select:  {
+        updatedAt: true,
+        note: {
+          select: {
+            id:    true,
+            title: true,
+            slug:  true,
+            topic: { select: { title: true, slug: true, color: true, icon: true } },
+          },
         },
       },
-    },
-  }).catch(() => []);
+    }).catch(() => []),
+  ]);
 
   const isPremium = dbUser?.isPremium ?? false;
   const streak    = dbUser?.streak    ?? 0;
-  const lastSeen  = dbUser?.lastSeen  ?? null;
 
   const completedSet  = new Set(completedProgress.filter(p => p.completed).map(p => p.noteId));
   const notesRead     = completedSet.size;
