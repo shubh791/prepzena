@@ -70,7 +70,8 @@ function buildMonthCalendar(progressRecords) {
   const year  = now.getFullYear();
   const month = now.getMonth();
 
-  const activeDates = new Set([now.getDate()]); // today always active
+  // Only mark days where the user actually completed a note — no default "today active"
+  const activeDates = new Set();
   for (const p of progressRecords) {
     if (p.completed && p.updatedAt) {
       const d = new Date(p.updatedAt);
@@ -273,6 +274,7 @@ export default async function HomePage() {
         weekActivity={weekActivity}
         daysThisWeek={daysThisWeek}
         todayIdx={todayIdx}
+        notesRead={notesRead}
         calendarData={{
           activeDates: Array.from(calendarData.activeDates),
           firstDay:    calendarData.firstDay,
