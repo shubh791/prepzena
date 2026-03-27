@@ -27,38 +27,20 @@ const COLORS = {
   indigo:  { bg:"bg-indigo-50",  border:"border-indigo-100",  text:"text-indigo-700",  bar:"bg-indigo-500",  hero:"from-indigo-500 to-blue-600"   },
 };
 
-// Returns array of 7 booleans (Sun→Sat) indicating which days had activity.
-// Uses actual progress records AND reconstructs streak days from lastSeen.
-function buildWeekActivity(progressRecords, streak, lastSeen) {
+// Returns array of 7 booleans (Sun→Sat) — only days with actual completed notes this week.
+// No streak backfill: must match monthly calendar which uses the same source of truth.
+function buildWeekActivity(progressRecords) {
   const now  = new Date();
-  const day  = now.getDay();
   const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - day);
+  weekStart.setDate(now.getDate() - now.getDay());
   weekStart.setHours(0, 0, 0, 0);
 
   const activeDays = new Set();
-
-  // 1. Mark days with actual completed progress records this week
   for (const p of progressRecords) {
     if (p.completed && p.updatedAt) {
       const d = new Date(p.updatedAt);
       if (d >= weekStart) activeDays.add(d.getDay());
     }
-  }
-
-  // 2. Backfill streak days within this week from lastSeen
-  //    e.g. streak=3, lastSeen=today → mark today, yesterday, day-before-yesterday
-  if (streak > 0 && lastSeen) {
-    const base = new Date(lastSeen);
-    base.setHours(12, 0, 0, 0); // use midday to avoid DST edge cases
-    for (let i = 0; i < streak; i++) {
-      const d = new Date(base);
-      d.setDate(base.getDate() - i);
-      if (d >= weekStart) activeDays.add(d.getDay());
-    }
-  } else if (streak > 0) {
-    // Fallback: no lastSeen → assume today was active
-    activeDays.add(day);
   }
 
   return Array.from({ length: 7 }, (_, i) => activeDays.has(i));
@@ -160,7 +142,7 @@ export default async function HomePage() {
     ? Math.round(quizScores.reduce((s, p) => s + p.quizScore, 0) / quizScores.length)
     : 0;
 
-  const weekActivity = buildWeekActivity(completedProgress, streak, lastSeen);
+  const weekActivity = buildWeekActivity(completedProgress);
   const daysThisWeek = weekActivity.filter(Boolean).length;
   const todayIdx     = new Date().getDay();
   const calendarData = buildMonthCalendar(completedProgress);

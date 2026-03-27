@@ -7,8 +7,9 @@ import { cn } from "@/lib/utils";
 
 const DAY_SHORT   = ["S","M","T","W","T","F","S"];
 const DAY_FULL    = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const GOAL        = 5;
+const MONTH_NAMES = ["January","February","March","April","May","June",
+                     "July","August","September","October","November","December"];
+const GOAL = 5;
 
 export default function WeeklyGoalCard({ weekActivity, daysThisWeek, todayIdx, calendarData, notesRead }) {
   const [showCal, setShowCal] = useState(false);
@@ -16,13 +17,12 @@ export default function WeeklyGoalCard({ weekActivity, daysThisWeek, todayIdx, c
   const { activeDates: activeDatesArr, firstDay, daysInMonth, today, month, year } = calendarData;
   const activeDates = new Set(activeDatesArr);
 
-  const goalPct      = Math.min(100, Math.round((daysThisWeek / GOAL) * 100));
+  const goalPct         = Math.min(100, Math.round((daysThisWeek / GOAL) * 100));
   const activeDaysCount = activeDates.size;
   const attendancePct   = today > 0 && notesRead > 0
-    ? Math.round((activeDaysCount / today) * 100)
-    : 0;
+    ? Math.round((activeDaysCount / today) * 100) : 0;
 
-  // Current streak from end of today backwards
+  // Current streak from today backwards
   let monthStreak = 0;
   for (let d = today; d >= 1; d--) {
     if (activeDates.has(d)) monthStreak++;
@@ -38,9 +38,9 @@ export default function WeeklyGoalCard({ weekActivity, daysThisWeek, todayIdx, c
     <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
 
       {/* ── Weekly section ── */}
-      <div className="p-5 space-y-4">
+      <div className="p-5 space-y-5">
 
-        {/* Header row */}
+        {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center shrink-0">
@@ -52,16 +52,12 @@ export default function WeeklyGoalCard({ weekActivity, daysThisWeek, todayIdx, c
                 Weekly Goal
               </p>
               <p className="text-[11px] text-slate-400 font-mono">
-                {daysThisWeek}/{GOAL} days studied · target {GOAL}/week
+                {daysThisWeek}/{GOAL} days · target {GOAL}/week
               </p>
             </div>
           </div>
-
           <div className="flex items-center gap-2 shrink-0">
-            <span className={cn(
-              "hidden sm:inline text-xs font-bold px-2.5 py-1 rounded-full border font-mono",
-              status.cls
-            )}>
+            <span className={cn("hidden sm:inline text-xs font-bold px-2.5 py-1 rounded-full border font-mono", status.cls)}>
               {status.label}
             </span>
             <button
@@ -86,8 +82,7 @@ export default function WeeklyGoalCard({ weekActivity, daysThisWeek, todayIdx, c
               className={cn(
                 "h-full rounded-full transition-all duration-700",
                 daysThisWeek >= GOAL ? "bg-gradient-to-r from-teal-500 to-emerald-500" :
-                daysThisWeek >= 3    ? "bg-amber-400" :
-                                       "bg-slate-300"
+                daysThisWeek >= 3    ? "bg-amber-400" : "bg-slate-300"
               )}
               style={{ width:`${goalPct}%` }}
             />
@@ -95,8 +90,8 @@ export default function WeeklyGoalCard({ weekActivity, daysThisWeek, todayIdx, c
           <p className="text-[10px] text-slate-400 font-mono text-right">{goalPct}% of weekly goal</p>
         </div>
 
-        {/* Day tiles */}
-        <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+        {/* Day tiles — fixed 40px tiles, centered row, same on all screen sizes */}
+        <div className="flex justify-between gap-1 sm:gap-2 max-w-sm mx-auto w-full">
           {DAY_FULL.map((dayFull, i) => {
             const active   = weekActivity[i];
             const isToday  = i === todayIdx;
@@ -104,7 +99,7 @@ export default function WeeklyGoalCard({ weekActivity, daysThisWeek, todayIdx, c
             return (
               <div key={i} className="flex flex-col items-center gap-1.5">
                 <div className={cn(
-                  "w-full aspect-square rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-200",
+                  "w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 transition-all duration-200",
                   active
                     ? "bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-md shadow-teal-200/60"
                     : isToday
@@ -115,18 +110,11 @@ export default function WeeklyGoalCard({ weekActivity, daysThisWeek, todayIdx, c
                 )}>
                   {active ? "✓" : isToday ? "·" : ""}
                 </div>
-                {/* Full label on md+, short on mobile */}
                 <span className={cn(
-                  "text-[9px] font-mono hidden sm:block",
+                  "text-[9px] font-mono",
                   isToday ? "text-teal-600 font-bold" : "text-slate-400"
                 )}>
                   {DAY_SHORT[i]}
-                </span>
-                <span className={cn(
-                  "text-[9px] font-mono sm:hidden",
-                  isToday ? "text-teal-600 font-bold" : "text-slate-400"
-                )}>
-                  {dayFull.charAt(0)}
                 </span>
               </div>
             );
@@ -146,7 +134,7 @@ export default function WeeklyGoalCard({ weekActivity, daysThisWeek, todayIdx, c
                 {MONTH_NAMES[month]} {year}
               </p>
               <p className="text-[11px] text-slate-400 font-mono mt-0.5">
-                {activeDaysCount} active · {attendancePct}% attendance this month
+                {activeDaysCount} active · {attendancePct}% attendance
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -177,53 +165,55 @@ export default function WeeklyGoalCard({ weekActivity, daysThisWeek, todayIdx, c
             </span>
           </div>
 
-          {/* Day-of-week headers */}
-          <div className="grid grid-cols-7 gap-1.5">
-            {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => (
-              <div key={d} className="text-[10px] font-mono font-semibold text-slate-400 text-center pb-1">
-                {d}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar grid */}
-          <div className="grid grid-cols-7 gap-1.5">
-            {Array.from({ length: firstDay }, (_, i) => <div key={`e${i}`} />)}
-            {Array.from({ length: daysInMonth }, (_, i) => {
-              const day       = i + 1;
-              const isToday   = day === today;
-              const isPresent = activeDates.has(day);
-              const isPast    = day < today;
-              const isFuture  = day > today;
-
-              return (
-                <div
-                  key={day}
-                  title={
-                    isPresent ? "Active day" :
-                    isToday   ? "Today" :
-                    isPast && notesRead > 0 ? "No activity" :
-                    ""
-                  }
-                  className={cn(
-                    "aspect-square rounded-xl flex items-center justify-center text-[11px] font-mono font-bold transition-all select-none",
-                    isToday && isPresent
-                      ? "ring-2 ring-offset-1 ring-teal-400 bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-md shadow-teal-200/50"
-                      : isToday
-                      ? "ring-2 ring-offset-1 ring-teal-400 bg-white text-teal-600 shadow-sm"
-                      : isPresent
-                      ? "bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-sm shadow-teal-200/40"
-                      : isPast && notesRead > 0
-                      ? "bg-rose-50 border border-rose-100 text-rose-400"
-                      : isFuture
-                      ? "bg-slate-50 text-slate-200"
-                      : "bg-slate-50 text-slate-300"
-                  )}
-                >
-                  {day}
+          {/* Calendar — fixed max-width, centered, same on all screens */}
+          <div className="max-w-sm mx-auto w-full space-y-1.5">
+            {/* Day-of-week headers */}
+            <div className="grid grid-cols-7 gap-1">
+              {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => (
+                <div key={d} className="text-[10px] font-mono font-semibold text-slate-400 text-center py-1">
+                  {d}
                 </div>
-              );
-            })}
+              ))}
+            </div>
+
+            {/* Date grid */}
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: firstDay }, (_, i) => <div key={`e${i}`} />)}
+              {Array.from({ length: daysInMonth }, (_, i) => {
+                const day       = i + 1;
+                const isToday   = day === today;
+                const isPresent = activeDates.has(day);
+                const isPast    = day < today;
+                const isFuture  = day > today;
+
+                return (
+                  <div
+                    key={day}
+                    title={
+                      isPresent ? "Active" :
+                      isToday   ? "Today" :
+                      isPast && notesRead > 0 ? "No activity" : ""
+                    }
+                    className={cn(
+                      "aspect-square rounded-lg flex items-center justify-center text-[11px] font-mono font-bold select-none transition-all",
+                      isToday && isPresent
+                        ? "ring-2 ring-offset-1 ring-teal-400 bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-md shadow-teal-200/50"
+                        : isToday
+                        ? "ring-2 ring-offset-1 ring-teal-400 bg-white text-teal-600 shadow-sm"
+                        : isPresent
+                        ? "bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-sm shadow-teal-200/40"
+                        : isPast && notesRead > 0
+                        ? "bg-rose-50 border border-rose-100 text-rose-400"
+                        : isFuture
+                        ? "bg-slate-50 text-slate-200"
+                        : "bg-slate-50 text-slate-300"
+                    )}
+                  >
+                    {day}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
