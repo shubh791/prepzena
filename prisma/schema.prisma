@@ -1,0 +1,194 @@
+// ─────────────────────────────────────────────────────────────
+//  prisma/schema.prisma
+//  Prepzena — complete database schema
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── USER ─────────────────────────────────────────────────────
+// Synced from Clerk via webhook
+model User {
+  id         String   @id @default(cuid())
+  clerkId    String   @unique          // Clerk user ID
+  email      String   @unique
+  name       String?
+  avatar     String?
+  university String?
+  isPremium  Boolean  @default(false)
+  streak     Int      @default(0)
+  lastSeen   DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  payments   Payment[]
+  reviews    Review[]
+  progress   Progress[]
+  unlocks    Unlock[]
+
+  @@index([clerkId])
+  @@index([email])
+}
+
+// ── TOPIC ─────────────────────────────────────────────────────
+// Groups notes under a subject (Arrays, OS, DBMS etc.)
+model Topic {
+  id         String   @id @default(cuid())
+  title      String
+  slug       String   @unique          // e.g. "arrays-hashing"
+  description String?
+  icon       String?                   // emoji or icon name
+  color      String   @default("teal") // for UI theming
+  order      Int      @default(0)      // display order
+  createdAt  DateTime @default(now())
+
+  notes      Note[]
+
+  @@index([slug])
+}
+
+// ── NOTE ──────────────────────────────────────────────────────
+// Individual study note within a topic
+model Note {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique         // e.g. "two-sum-problem"
+  content     String   @db.Text        // MDX / markdown content
+  summary     String?                  // short excerpt for cards
+  isPremium   Boolean  @default(false)
+  readTime    Int      @default(5)     // estimated minutes
+  order       Int      @default(0)     // order within topic
+  topicId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  topic       Topic      @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  quizzes     Quiz[]
+  reviews     Review[]
+  progress    Progress[]
+  unlocks     Unlock[]
+
+  @@index([slug])
+  @@index([topicId])
+}
+
+// ── QUIZ ──────────────────────────────────────────────────────
+// MCQ question linked to a note
+model Quiz {
+  id          String   @id @default(cuid())
+  question    String
+  options     Json                     // String[] — 4 options
+  answer      Int                      // index of correct option (0-3)
+  explanation String?                  // shown after answering
+  isPremium   Boolean  @default(false)
+  noteId      String
+  createdAt   DateTime @default(now())
+
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+}
+
+// ── PYQ ───────────────────────────────────────────────────────
+// Previous Year Question papers
+model PYQ {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  university  String
+  year        Int
+  subject     String
+  questions   Json                     // { text, marks, answer? }[]
+  solutionPdf String?                  // URL — premium only
+  isPremium   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  unlocks     Unlock[]
+
+  @@index([slug])
+  @@index([subject])
+  @@index([university])
+}
+
+// ── REVIEW ────────────────────────────────────────────────────
+// User review on a note (1 per user per note)
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int                        // 1-5
+  content   String   @db.Text
+  userId    String
+  noteId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, noteId])           // one review per user per note
+  @@index([noteId])
+  @@index([userId])
+}
+
+// ── PROGRESS ──────────────────────────────────────────────────
+// Tracks what a user has read / completed
+model Progress {
+  id          String   @id @default(cuid())
+  userId      String
+  noteId      String
+  completed   Boolean  @default(false)
+  quizScore   Int?                     // last quiz score %
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, noteId])
+  @@index([userId])
+}
+
+// ── UNLOCK ────────────────────────────────────────────────────
+// Records which premium content a user has paid for
+model Unlock {
+  id        String   @id @default(cuid())
+  userId    String
+  noteId    String?                    // unlocked note (null if PYQ)
+  pyqId     String?                    // unlocked PYQ (null if note)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note      Note?    @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  pyq       PYQ?     @relation(fields: [pyqId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, noteId])
+  @@unique([userId, pyqId])
+  @@index([userId])
+}
+
+// ── PAYMENT ───────────────────────────────────────────────────
+// Razorpay transaction records
+model Payment {
+  id                String   @id @default(cuid())
+  userId            String
+  amount            Int                // paise (₹10 = 1000)
+  status            String   @default("pending") // pending|success|failed
+  noteId            String?            // what was unlocked
+  pyqId             String?
+  razorpayOrderId   String?  @unique
+  razorpayPaymentId String?
+  razorpaySignature String?
+  createdAt         DateTime @default(now())
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
